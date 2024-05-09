@@ -9,7 +9,7 @@ defmodule Et.Application do
   def start(_type, _args) do
     children = [
       EtWeb.Telemetry,
-      # Et.Repo,
+      Et.Repo,
       {DNSCluster, query: Application.get_env(:exam_tender, :dns_cluster_query) || :ignore},
       {Phoenix.PubSub, name: Et.PubSub},
       # Start the Finch HTTP client for sending emails

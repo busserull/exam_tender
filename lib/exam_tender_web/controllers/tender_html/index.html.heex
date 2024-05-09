@@ -1,27 +1,29 @@
 <.header>Welcome diver</.header>
 
 <p>
-Exam Tender is a simple sparring buddy when practicing for the physics exam for the intro course at NYD.
-It is in no way affiliated or endorsed by NYD, but provided to you for free in the hope that it may be useful.
+  Exam Tender is a simple sparring buddy when practicing for the physics exam for the intro course at NYD.
+  It is in no way affiliated or endorsed by NYD, but provided to you for free in the hope that it may be useful.
 </p>
 
 <p>
-Logging in is optional, and is not used to track you - it is only used by Exam Tender to keep track of what
-type of questions you've had a lot of, and which you haven't.
+  Logging in is optional, and is not used to track you - it is only used by Exam Tender to keep track of what
+  type of questions you've had a lot of, and which you haven't.
 </p>
 
-<form>
+<.form action={~p"/login"} method="post">
   <label for="Student">What's your name?</label>
-  <select name="student" id="Student">
+  <select name="student-number" id="Student">
     <option value="" selected>Continue as guest</option>
-    <option value="02">Kolbjørn Austreng</option>
+    <%= for %{name: name, number: number} <- @students do %>
+      <option value={number}><%= name %></option>
+    <% end %>
   </select>
 
-<.button>Log in</.button>
-</form>
+  <.button>Log in</.button>
+</.form>
 
 <style>
-p {
-  margin: 1.2em 0;
-}
+  p {
+    margin: 1.2em 0;
+  }
 </style>

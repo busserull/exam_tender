@@ -2,10 +2,10 @@ import Config
 
 # Configure your database
 config :exam_tender, Et.Repo,
-  username: "postgres",
+  username: "austreng",
   password: "postgres",
   hostname: "localhost",
-  database: "exam_tender_dev",
+  database: "et_dev",
   stacktrace: true,
   show_sensitive_data_on_connection_error: true,
   pool_size: 10
