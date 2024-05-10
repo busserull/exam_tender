@@ -1,6 +1,8 @@
 defmodule EtWeb.TenderLive do
   use EtWeb, :live_view
 
+  alias Phoenix.LiveView.JS
+
   def mount(_params, session, socket) do
     question = question()
 
@@ -8,23 +10,28 @@ defmodule EtWeb.TenderLive do
       socket
       |> assign(:student_id, Map.get(session, "student_id"))
       |> assign(:question, question.text)
-      |> assign(:alternatives, question.alternatives)
+      |> assign(:explanation, question.explanation)
+      |> assign(:options, question.options)
       |> assign(:answer, nil)
 
     {:ok, socket}
   end
 
+  def handle_params(_params, _url, socket) do
+    {:noreply, socket}
+  end
+
   def handle_event("submit", %{"value" => value}, socket) do
     {answer, ""} = Integer.parse(value)
 
-    alternatives =
-      socket.assigns.alternatives
-      |> Enum.map(&color_alternative(&1, answer))
+    options =
+      socket.assigns.options
+      |> Enum.map(&color_option(&1, answer))
 
     socket =
       socket
       |> assign(:answer, answer)
-      |> assign(:alternatives, alternatives)
+      |> assign(:options, options)
 
     :timer.send_after(3000, self(), :clear)
 
@@ -32,14 +39,14 @@ defmodule EtWeb.TenderLive do
   end
 
   def handle_info(:clear, socket) do
-    alternatives =
-      socket.assigns.alternatives
-      |> Enum.map(&color_alternative(&1, nil))
+    options =
+      socket.assigns.options
+      |> Enum.map(&color_option(&1, nil))
 
     socket =
       socket
       |> assign(:answer, nil)
-      |> assign(:alternatives, alternatives)
+      |> assign(:options, options)
 
     {:noreply, socket}
   end
@@ -52,19 +59,62 @@ defmodule EtWeb.TenderLive do
       </p>
     </div>
 
-    <div class="grid gap-4 grid-cols-2 m-6">
-      <%= for option <- @alternatives do %>
-        <.alternative number={option.id} active={is_nil(@answer)} colors={option.colors}>
+    <div class="grid gap-4 grid-cols-2 my-10 mx-6">
+      <%= for option <- @options do %>
+        <.alternative number={option.id} disabled={@answer != nil} colors={option.colors}>
           <%= option.text %>
         </.alternative>
       <% end %>
     </div>
+
+    <div class="flex flex-row justify-between mb-4">
+      <button
+        phx-click={toggle_explanation()}
+        class="border border-slate-900 p-2 w-2/5 text-center rounded-md"
+      >
+        <span id="ShowExplanation" class="hidden">
+          Show explanation <.icon name="hero-chevron-down" />
+        </span>
+        <span id="HideExplanation">
+          Hide explanation <.icon name="hero-chevron-up" />
+        </span>
+      </button>
+
+      <.link patch={~p"/practice"} class="border border-slate-900 p-2 w-2/5 text-center rounded-md">
+        Next question <.icon name="hero-chevron-right" />
+      </.link>
+    </div>
+
+    <div class="bg-slate-300" id="Explanation">
+      <p :for={paragraph <- @explanation}>
+        <%= paragraph %>
+      </p>
+    </div>
     """
   end
 
-  attr :active, :boolean, default: true
+  def toggle_explanation do
+    JS.toggle(
+      to: "#Explanation",
+      in: {
+        "ease-in-out duration-300",
+        "translate-y-full",
+        "translate-y-0"
+      },
+      out: {
+        "ease-in-out duration-300",
+        "translate-y-0",
+        "translate-y-full"
+      },
+      time: 300
+    )
+    |> JS.toggle(to: "#ShowExplanation")
+    |> JS.toggle(to: "#HideExplanation")
+  end
+
   attr :number, :integer, required: true
   attr :colors, :string, required: true
+  attr :rest, :global
 
   slot :inner_block, required: true
 
@@ -73,11 +123,11 @@ defmodule EtWeb.TenderLive do
     <button
       phx-click="submit"
       value={@number}
-      disabled={!@active}
       class={[
-        "border rounded p-4 relative",
+        "border rounded-lg p-4 relative transition-colors duration-200",
         @colors
       ]}
+      {@rest}
     >
       <%= render_slot(@inner_block) %>
     </button>
@@ -91,7 +141,7 @@ defmodule EtWeb.TenderLive do
         "A balloon at the surface has a volume of 2 liters.",
         "What volume does it have at 10 meters submersion?"
       ],
-      alternatives: make_alternatives(),
+      options: make_options(),
       correct: 1,
       explanation: [
         "Boyle's law states that the product of pressure and volume stays constant given constant temperature"
@@ -99,7 +149,7 @@ defmodule EtWeb.TenderLive do
     }
   end
 
-  def make_alternatives(_correct \\ nil, _incorrect \\ nil) do
+  def make_options(_correct \\ nil, _incorrect \\ nil) do
     [
       %{
         text: "6 liters",
@@ -122,27 +172,27 @@ defmodule EtWeb.TenderLive do
         correct?: false
       }
     ]
-    |> Enum.map(&color_alternative(&1, nil))
+    |> Enum.map(&color_option(&1, nil))
   end
 
-  defp color_alternative(alternative, nil) do
-    Map.put(alternative, :colors, "text-slate-900 border-slate-500 bg-slate-50")
+  defp color_option(option, nil) do
+    Map.put(option, :colors, "text-slate-900 border-slate-500 bg-slate-50")
   end
 
-  defp color_alternative(alternative, answer) do
+  defp color_option(option, answer) do
     colors =
       cond do
-        alternative.correct? && alternative.id == answer ->
+        option.correct? && option.id == answer ->
           "text-green-600 border-green-600 bg-green-100"
 
-        alternative.id == answer ->
+        option.id == answer ->
           "text-pink-600 border-pink-600 bg-pink-100"
 
         true ->
           "text-slate-500 border-slate-300 bg-slate-100"
       end
 
-    Map.put(alternative, :colors, colors)
+    Map.put(option, :colors, colors)
   end
 
   defp enumerate(sequence), do: Enum.zip(0..Enum.count(sequence), sequence)
