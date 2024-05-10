@@ -9,6 +9,7 @@ defmodule EtWeb.TenderLive do
     socket =
       socket
       |> assign(:student_id, Map.get(session, "student_id"))
+      |> assign(:count, %{at: 1, of: 5})
       |> assign(:question, question.text)
       |> assign(:explanation, question.explanation)
       |> assign(:options, question.options)
@@ -33,12 +34,10 @@ defmodule EtWeb.TenderLive do
       |> assign(:answer, answer)
       |> assign(:options, options)
 
-    :timer.send_after(3000, self(), :clear)
-
     {:noreply, socket}
   end
 
-  def handle_info(:clear, socket) do
+  def handle_event("clear", _params, socket) do
     options =
       socket.assigns.options
       |> Enum.map(&color_option(&1, nil))
@@ -53,11 +52,17 @@ defmodule EtWeb.TenderLive do
 
   def render(assigns) do
     ~H"""
-    <div class="text-lg mb-8">
-      <p :for={paragraph <- @question}>
-        <%= paragraph %>
+    <section>
+      <p class="text-sm text-stone-500">
+        Question <%= @count.at %>/<%= @count.of %>
       </p>
-    </div>
+
+      <div class="mt-4 mb-2">
+        <p :for={paragraph <- @question} class="text-lg text-stone-900 leading-relaxed">
+          <%= paragraph %>
+        </p>
+      </div>
+    </section>
 
     <div class="grid gap-4 grid-cols-2 my-10 mx-6">
       <%= for option <- @options do %>
@@ -67,29 +72,34 @@ defmodule EtWeb.TenderLive do
       <% end %>
     </div>
 
-    <div class="flex flex-row justify-between mb-4">
-      <button
-        phx-click={toggle_explanation()}
-        class="border border-slate-900 p-2 w-2/5 text-center rounded-md"
-      >
-        <span id="ShowExplanation" class="hidden">
-          Show explanation <.icon name="hero-chevron-down" />
-        </span>
-        <span id="HideExplanation">
-          Hide explanation <.icon name="hero-chevron-up" />
-        </span>
-      </button>
+    <section :if={@answer != nil}>
+      <div class="flex flex-row justify-around mb-4 mx-6">
+        <button
+          phx-click={toggle_explanation()}
+          class="rounded-full p-2 w-2/5 text-center text-sky-600 border border-sky-600 hover:text-sky-500 hover:border-sky-500 transition-colors font-medium tracking-wide"
+        >
+          <span id="ShowExplanation">
+            Show explanation
+          </span>
+          <span id="HideExplanation" class="hidden">
+            Hide explanation
+          </span>
+        </button>
 
-      <.link patch={~p"/practice"} class="border border-slate-900 p-2 w-2/5 text-center rounded-md">
-        Next question <.icon name="hero-chevron-right" />
-      </.link>
-    </div>
+        <button
+          phx-click="clear"
+          class="rounded-full p-2 w-2/5 text-center text-white border border-sky-600 hover:border-sky-500 hover:bg-sky-500 transition-colors font-medium tracking-wide bg-sky-600"
+        >
+          Next question <.icon name="hero-chevron-right" />
+        </button>
+      </div>
 
-    <div class="bg-slate-300" id="Explanation">
-      <p :for={paragraph <- @explanation}>
-        <%= paragraph %>
-      </p>
-    </div>
+      <div id="Explanation" class="mx-6 mt-6 leading-loose hidden">
+        <p :for={paragraph <- @explanation} class="text-stone-800">
+          <%= paragraph %>
+        </p>
+      </div>
+    </section>
     """
   end
 
@@ -98,13 +108,13 @@ defmodule EtWeb.TenderLive do
       to: "#Explanation",
       in: {
         "ease-in-out duration-300",
-        "translate-y-full",
-        "translate-y-0"
+        "opacity-0 translate-y-6",
+        "opacity-100 translate-y-0"
       },
       out: {
         "ease-in-out duration-300",
-        "translate-y-0",
-        "translate-y-full"
+        "opacity-100 translate-y-0",
+        "opacity-0 translate-y-6"
       },
       time: 300
     )
@@ -139,12 +149,15 @@ defmodule EtWeb.TenderLive do
     %{
       text: [
         "A balloon at the surface has a volume of 2 liters.",
-        "What volume does it have at 10 meters submersion?"
+        "What volume does it have at 10 meters submersion in water?"
       ],
       options: make_options(),
       correct: 1,
       explanation: [
-        "Boyle's law states that the product of pressure and volume stays constant given constant temperature"
+        "Boyle's law states that the product of pressure and volume stays constant given constant temperature." <>
+          "At the surface, we have 1 bar of pressure, giving us a product of 2 bar * L." <>
+          "At 10 meters of water, we have 1 additional bar of pressure, plus the 1 bar from the atmosphere. Hence, we have a total of 2 bar pressure." <>
+          "Divide 2 bar * L by 2 bar, and we get 1 L, which is the balloon's volume when submerged."
       ]
     }
   end
@@ -176,7 +189,11 @@ defmodule EtWeb.TenderLive do
   end
 
   defp color_option(option, nil) do
-    Map.put(option, :colors, "text-slate-900 border-slate-500 bg-slate-50")
+    Map.put(
+      option,
+      :colors,
+      "text-stone-900 border-stone-500 bg-stone-100 hover:bg-stone-50"
+    )
   end
 
   defp color_option(option, answer) do
@@ -189,7 +206,7 @@ defmodule EtWeb.TenderLive do
           "text-pink-600 border-pink-600 bg-pink-100"
 
         true ->
-          "text-slate-500 border-slate-300 bg-slate-100"
+          "text-stone-500 border-stone-300 bg-stone-100"
       end
 
     Map.put(option, :colors, colors)
