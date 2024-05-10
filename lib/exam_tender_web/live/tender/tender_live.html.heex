@@ -1,1 +1,76 @@
-<div class="text-"></div>
+<section>
+  <p class="text-sm text-stone-500">
+    Question <%= @count_at %>/<%= @count_of %>
+  </p>
+
+  <div class="mt-4 mb-2">
+    <p :for={paragraph <- @question} class="text-lg text-stone-900 leading-relaxed">
+      <%= paragraph %>
+    </p>
+  </div>
+</section>
+
+<div class="grid gap-4 grid-cols-2 my-10 mx-6">
+  <%= for option <- @options do %>
+    <.alternative number={option.id} disabled={@answer != nil} colors={option.colors}>
+      <%= option.text %>
+    </.alternative>
+  <% end %>
+</div>
+
+<section :if={@answer != nil && !@set_complete}>
+  <div class="flex flex-row justify-around mb-4 mx-6">
+    <button
+      phx-click={toggle_explanation()}
+      class="rounded-full p-2 w-2/5 text-center text-sky-600 border border-sky-600 hover:text-sky-500 hover:border-sky-500 transition-colors font-medium tracking-wide"
+    >
+      <span id="ShowExplanation">
+        Show explanation
+      </span>
+      <span id="HideExplanation" class="hidden">
+        Hide explanation
+      </span>
+    </button>
+
+    <button
+      phx-click="clear"
+      class="rounded-full p-2 w-2/5 text-center text-white border border-sky-600 hover:border-sky-500 hover:bg-sky-500 transition-colors font-medium tracking-wide bg-sky-600"
+    >
+      Next question <.icon name="hero-chevron-right" />
+    </button>
+  </div>
+
+  <div id="Explanation" class="mx-6 mt-6 leading-loose hidden">
+    <p :for={paragraph <- @explanation} class="text-stone-800">
+      <%= paragraph %>
+    </p>
+  </div>
+</section>
+
+<section :if={@set_complete} class="border-t pt-6 border-stone-200">
+  <h1 class="text-xl text-stone-900">Nicely done</h1>
+
+  <p class="text-stone-800 my-2">
+    <%= if @recommend_retry do %>
+      But that wasn't quite flawless, maybe you should give this set another go?
+    <% else %>
+      You seem to have a good grasp on this.
+    <% end %>
+  </p>
+
+  <div class="flex flex-row justify-around mx-6 mt-6">
+    <.link
+      patch={~p"/practice"}
+      class="rounded-full p-2 w-2/5 text-center text-sky-600 border border-sky-600 hover:text-sky-500 hover:border-sky-500 transition-colors font-medium tracking-wide"
+    >
+      <.icon name="hero-arrow-path" class="mr-2" /> Repeat set
+    </.link>
+
+    <.link
+      href={~p"/"}
+      class="rounded-full p-2 w-2/5 text-center text-white border border-sky-600 hover:border-sky-500 hover:bg-sky-500 transition-colors font-medium tracking-wide bg-sky-600"
+    >
+      Onward to new topics
+    </.link>
+  </div>
+</section>

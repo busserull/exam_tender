@@ -3,104 +3,88 @@ defmodule EtWeb.TenderLive do
 
   alias Phoenix.LiveView.JS
 
-  def mount(_params, session, socket) do
-    question = question()
+  def handle_params(_params, _url, socket) do
+    {:noreply, socket}
+  end
 
+  def mount(_params, session, socket) do
     socket =
       socket
       |> assign(:student_id, Map.get(session, "student_id"))
-      |> assign(:count, %{at: 1, of: 5})
-      |> assign(:question, question.text)
-      |> assign(:explanation, question.explanation)
-      |> assign(:options, question.options)
-      |> assign(:answer, nil)
+      |> assign(:set_complete, false)
+      |> assign(:count_at, 1)
+      |> assign(:count_of, 5)
+      |> assign(:questions_asked, 0)
+      |> assign(:last_answer_correct, nil)
+      |> assign_new_question()
 
     {:ok, socket}
   end
 
-  def handle_params(_params, _url, socket) do
-    {:noreply, socket}
+  defp assign_new_question(socket) do
+    question = question()
+
+    socket
+    |> maybe_update_count()
+    |> update(:questions_asked, &(&1 + 1))
+    |> assign(:question, question.text)
+    |> assign(:explanation, question.explanation)
+    |> assign(:options, question.options)
+    |> assign(:answer, nil)
+  end
+
+  defp maybe_update_count(socket) do
+    if socket.assigns.last_answer_correct do
+      update(socket, :count_at, &(&1 + 1))
+    else
+      socket
+    end
+  end
+
+  def maybe_complete_set(socket) do
+    %{
+      last_answer_correct: last_correct,
+      count_at: at,
+      count_of: of,
+      questions_asked: asked
+    } = socket.assigns
+
+    accuracy = of / asked
+
+    recommend_retry = accuracy < 0.60
+
+    if last_correct && at == of do
+      assign(socket, set_complete: true, recommend_retry: recommend_retry)
+    else
+      socket
+    end
   end
 
   def handle_event("submit", %{"value" => value}, socket) do
     {answer, ""} = Integer.parse(value)
 
-    options =
+    answer_correct? =
       socket.assigns.options
-      |> Enum.map(&color_option(&1, answer))
+      |> Enum.find(&(&1.id == answer))
+      |> Map.fetch!(:correct?)
 
     socket =
       socket
+      |> update(:options, &color_options(&1, answer))
       |> assign(:answer, answer)
-      |> assign(:options, options)
+      |> assign(:last_answer_correct, answer_correct?)
+      |> maybe_complete_set()
 
     {:noreply, socket}
   end
 
   def handle_event("clear", _params, socket) do
-    options =
-      socket.assigns.options
-      |> Enum.map(&color_option(&1, nil))
-
-    socket =
-      socket
-      |> assign(:answer, nil)
-      |> assign(:options, options)
-
-    {:noreply, socket}
+    {:noreply, assign_new_question(socket)}
   end
 
-  def render(assigns) do
-    ~H"""
-    <section>
-      <p class="text-sm text-stone-500">
-        Question <%= @count.at %>/<%= @count.of %>
-      </p>
-
-      <div class="mt-4 mb-2">
-        <p :for={paragraph <- @question} class="text-lg text-stone-900 leading-relaxed">
-          <%= paragraph %>
-        </p>
-      </div>
-    </section>
-
-    <div class="grid gap-4 grid-cols-2 my-10 mx-6">
-      <%= for option <- @options do %>
-        <.alternative number={option.id} disabled={@answer != nil} colors={option.colors}>
-          <%= option.text %>
-        </.alternative>
-      <% end %>
-    </div>
-
-    <section :if={@answer != nil}>
-      <div class="flex flex-row justify-around mb-4 mx-6">
-        <button
-          phx-click={toggle_explanation()}
-          class="rounded-full p-2 w-2/5 text-center text-sky-600 border border-sky-600 hover:text-sky-500 hover:border-sky-500 transition-colors font-medium tracking-wide"
-        >
-          <span id="ShowExplanation">
-            Show explanation
-          </span>
-          <span id="HideExplanation" class="hidden">
-            Hide explanation
-          </span>
-        </button>
-
-        <button
-          phx-click="clear"
-          class="rounded-full p-2 w-2/5 text-center text-white border border-sky-600 hover:border-sky-500 hover:bg-sky-500 transition-colors font-medium tracking-wide bg-sky-600"
-        >
-          Next question <.icon name="hero-chevron-right" />
-        </button>
-      </div>
-
-      <div id="Explanation" class="mx-6 mt-6 leading-loose hidden">
-        <p :for={paragraph <- @explanation} class="text-stone-800">
-          <%= paragraph %>
-        </p>
-      </div>
-    </section>
-    """
+  def handle_info(:complete_set, socket) do
+    accuracy = socket.assigns.count_of / socket.assigns.questions_asked
+    {:noreply, assign(socket, set_complete: true, accuracy: accuracy)}
   end
 
   def toggle_explanation do
@@ -124,7 +108,7 @@ defmodule EtWeb.TenderLive do
 
   attr :number, :integer, required: true
   attr :colors, :string, required: true
-  attr :rest, :global
+  attr :rest, :global, include: ~w(disabled)
 
   slot :inner_block, required: true
 
@@ -163,7 +147,7 @@ defmodule EtWeb.TenderLive do
   end
 
   def make_options(_correct \\ nil, _incorrect \\ nil) do
-    [
+    options = [
       %{
         text: "6 liters",
         id: 0,
@@ -185,7 +169,12 @@ defmodule EtWeb.TenderLive do
         correct?: false
       }
     ]
-    |> Enum.map(&color_option(&1, nil))
+
+    color_options(options, nil)
+  end
+
+  defp color_options(options, answer) do
+    Enum.map(options, &color_option(&1, answer))
   end
 
   defp color_option(option, nil) do
