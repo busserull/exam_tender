@@ -1,6 +1,8 @@
 defmodule EtWeb.TenderLive do
   use EtWeb, :live_view
 
+  alias Et.Quiz
+
   alias Phoenix.LiveView.JS
 
   def handle_params(_params, _url, socket) do
@@ -22,14 +24,14 @@ defmodule EtWeb.TenderLive do
   end
 
   defp assign_new_question(socket) do
-    question = question()
+    question = Quiz.question()
 
     socket
     |> maybe_update_count()
     |> update(:questions_asked, &(&1 + 1))
-    |> assign(:question, question.text)
+    |> assign(:question, Enum.map(question.text, &{:safe, &1}))
     |> assign(:explanation, question.explanation)
-    |> assign(:options, question.options)
+    |> assign(:options, color_options(question.options))
     |> assign(:answer, nil)
   end
 
@@ -173,7 +175,7 @@ defmodule EtWeb.TenderLive do
     color_options(options, nil)
   end
 
-  defp color_options(options, answer) do
+  defp color_options(options, answer \\ nil) do
     Enum.map(options, &color_option(&1, answer))
   end
 
