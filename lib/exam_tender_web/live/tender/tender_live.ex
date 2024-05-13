@@ -1,6 +1,7 @@
 defmodule EtWeb.TenderLive do
   use EtWeb, :live_view
 
+  alias Et.Students
   alias Et.Quiz
 
   alias Phoenix.LiveView.JS
@@ -10,9 +11,12 @@ defmodule EtWeb.TenderLive do
   end
 
   def mount(_params, session, socket) do
+    student_id = Map.get(session, "student_id")
+
     socket =
       socket
-      |> assign(:student_id, Map.get(session, "student_id"))
+      |> assign(:student_id, student_id)
+      |> assign(:student, Students.get_student!(student_id))
       |> assign(:set_complete, false)
       |> assign(:count_at, 1)
       |> assign(:count_of, 5)
