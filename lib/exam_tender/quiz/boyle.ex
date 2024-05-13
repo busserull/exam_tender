@@ -1,12 +1,20 @@
 defmodule Et.Quiz.Boyle do
+  import Et.Quiz.Utils
+
   def question do
-    # question_balloon_submerge()
-    question_balloon_burst()
-    # question_bubble_blow()
-    # question_lift_bag()
+    template =
+      [
+        :balloon_submerge,
+        :balloon_burst,
+        :bubble_blow,
+        :lift_bag
+      ]
+      |> Enum.random()
+
+    apply(__MODULE__, template, [])
   end
 
-  defp question_lift_bag do
+  def lift_bag do
     lift_bag_volume = rand_range(368, 728)
     dive_depth = rand_range(8, 29)
 
@@ -47,7 +55,7 @@ defmodule Et.Quiz.Boyle do
     }
   end
 
-  defp question_bubble_blow do
+  def bubble_blow do
     dive_depth = rand_range(18, 43)
     bubble_blow = rand_range(0.4, 0.9, 0.1)
 
@@ -91,7 +99,7 @@ defmodule Et.Quiz.Boyle do
     }
   end
 
-  defp question_balloon_burst do
+  def balloon_burst do
     dive_depth = rand_range(36, 50)
 
     burst_depth = rand_range(2.6, 5.2, 0.1)
@@ -141,7 +149,7 @@ defmodule Et.Quiz.Boyle do
     }
   end
 
-  defp question_balloon_submerge do
+  def balloon_submerge do
     surface_volume = rand_range(2, 6)
     submersion = rand_range(10, 40)
 
@@ -183,38 +191,5 @@ defmodule Et.Quiz.Boyle do
       options: options,
       correct: correct_id
     }
-  end
-
-  defp make_options(correct, incorrect, unit) do
-    options =
-      [{correct, true} | Enum.map(incorrect, &{&1, false})]
-      |> Enum.shuffle()
-      |> Enum.zip(0..(Enum.count(incorrect) + 1))
-      |> Enum.map(fn {{option, correct?}, id} ->
-        %{
-          id: id,
-          text: "#{r2(option)} #{unit}",
-          correct?: correct?
-        }
-      end)
-
-    correct_id =
-      options
-      |> Enum.find(& &1.correct?)
-      |> Map.fetch!(:id)
-
-    {correct_id, options}
-  end
-
-  defp r0(number), do: round(number, 0)
-  defp r1(number), do: round(number, 1)
-  defp r2(number), do: round(number, 2)
-
-  defp round(number, to), do: number |> Decimal.from_float() |> Decimal.round(to)
-
-  defp rand_range(min, max), do: (min - 1 + :rand.uniform(max - min)) * 1.0
-
-  defp rand_range(min, max, step) do
-    (min - step + :rand.uniform(floor((max - min) / step) + 1) * step) * 1.0
   end
 end
