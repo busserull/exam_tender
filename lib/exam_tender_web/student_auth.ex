@@ -23,17 +23,11 @@ defmodule EtWeb.StudentAuth do
   def log_out(conn) do
     conn
     |> configure_session(drop: true)
-    |> redirect(to: ~p"/")
   end
 
   def fetch_current_student(conn, _opts) do
-    case get_session(conn, :student_id) do
-      nil ->
-        assign(conn, :student, nil)
-
-      id ->
-        assign(conn, :student, Students.get_student!(id))
-    end
+    maybe_id = get_session(conn, :student_id)
+    assign(conn, :student, Students.get_student(maybe_id))
   end
 
   def redirect_if_logged_in(conn, _opts) do

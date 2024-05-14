@@ -16,7 +16,7 @@ defmodule EtWeb.TenderLive do
     socket =
       socket
       |> assign(:student_id, student_id)
-      |> assign(:student, Students.get_student!(student_id))
+      |> assign(:student, Students.get_student(student_id))
       |> assign(:set_complete, false)
       |> assign(:count_at, 1)
       |> assign(:count_of, 5)

@@ -12,5 +12,7 @@ defmodule Et.Students do
     Repo.one(from s in Student, where: s.number == ^number)
   end
 
-  def get_student!(id), do: Repo.get!(Student, id)
+  def get_student(nil), do: nil
+
+  def get_student(id), do: Repo.get(Student, id)
 end
