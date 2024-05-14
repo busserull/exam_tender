@@ -21,6 +21,14 @@ defmodule EtWeb.Router do
     plug :accepts, ["json"]
   end
 
+  scope "/practice", EtWeb do
+    pipe_through [:browser]
+
+    get "/", TopicController, :index
+
+    live "/:topic_id", TenderLive
+  end
+
   scope "/", EtWeb do
     pipe_through [:browser, :redirect_if_logged_in]
 
@@ -32,8 +40,6 @@ defmodule EtWeb.Router do
 
     post "/login", TenderController, :login
     delete "/logout", TenderController, :logout
-
-    live "/practice", TenderLive
   end
 
   # Other scopes may use custom stacks.

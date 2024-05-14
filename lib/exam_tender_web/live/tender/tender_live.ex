@@ -6,15 +6,22 @@ defmodule EtWeb.TenderLive do
 
   alias Phoenix.LiveView.JS
 
-  def handle_params(_params, _url, socket) do
-    {:noreply, socket}
-  end
+  # def handle_params(%{"topic_id" => topic_id}, _url, socket) do
+  #   {:noreply, assign(socket, :topic_id, topic_id)}
+  # end
 
-  def mount(_params, session, socket) do
+  def mount(%{"topic_id" => topic_id}, session, socket) do
     student_id = Map.get(session, "student_id")
+
+    topic_id =
+      case Integer.parse(topic_id) do
+        {id, _} -> id
+        _ -> 0
+      end
 
     socket =
       socket
+      |> assign(:topic_id, topic_id)
       |> assign(:student_id, student_id)
       |> assign(:student, Students.get_student(student_id))
       |> assign(:set_complete, false)
@@ -28,13 +35,14 @@ defmodule EtWeb.TenderLive do
   end
 
   defp assign_new_question(socket) do
-    question = Quiz.question()
+    question = Quiz.get_question(socket.assigns.topic_id)
 
     socket
     |> maybe_update_count()
     |> update(:questions_asked, &(&1 + 1))
     |> assign(:question, Enum.map(question.text, &{:safe, &1}))
-    |> assign(:explanation, question.explanation)
+    |> assign(:explanation, Enum.map(question.explanation, &{:safe, &1}))
+    # |> assign(:explanation, question.explanation)
     |> assign(:options, color_options(question.options))
     |> assign(:answer, nil)
   end
@@ -206,6 +214,4 @@ defmodule EtWeb.TenderLive do
 
     Map.put(option, :colors, colors)
   end
-
-  defp enumerate(sequence), do: Enum.zip(0..Enum.count(sequence), sequence)
 end

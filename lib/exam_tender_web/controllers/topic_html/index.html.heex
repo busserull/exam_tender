@@ -1,0 +1,7 @@
+<section>
+  <%= for {topic_id, topic_title, _module, _mastery} <- @topics do %>
+    <div>
+      <.link href={~p"/practice/#{topic_id}"}><%= topic_title %></.link>
+    </div>
+  <% end %>
+</section>
