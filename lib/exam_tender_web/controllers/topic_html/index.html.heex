@@ -1,7 +1,13 @@
 <section>
-  <%= for {topic_id, topic_title, _module, _mastery} <- @topics do %>
-    <div>
-      <.link href={~p"/practice/#{topic_id}"}><%= topic_title %></.link>
-    </div>
+  <%= for {topic_id, topic_title, _module, mastered} <- @topics do %>
+    <.link
+      class="flex flex-row p-3 justify-between text-lg border-b border-stone-300"
+      href={~p"/practice/#{topic_id}"}
+    >
+      <p><%= topic_title %></p>
+      <p class={"#{if mastered, do: "text-green-600", else: "text-stone-400"}"}>
+        <%= if mastered, do: "Mastered", else: "Practice adviced" %>
+      </p>
+    </.link>
   <% end %>
 </section>

@@ -2,6 +2,7 @@ defmodule EtWeb.TenderLive do
   use EtWeb, :live_view
 
   alias Et.Students
+  alias Et.Mastery
   alias Et.Quiz
 
   alias Phoenix.LiveView.JS
@@ -42,7 +43,6 @@ defmodule EtWeb.TenderLive do
     |> update(:questions_asked, &(&1 + 1))
     |> assign(:question, Enum.map(question.text, &{:safe, &1}))
     |> assign(:explanation, Enum.map(question.explanation, &{:safe, &1}))
-    # |> assign(:explanation, question.explanation)
     |> assign(:options, color_options(question.options))
     |> assign(:answer, nil)
   end
@@ -68,6 +68,12 @@ defmodule EtWeb.TenderLive do
     recommend_retry = accuracy < 0.60
 
     if last_correct && at == of do
+      student_id = socket.assigns.student_id
+      topic_id = socket.assigns.topic_id
+      mastered = !recommend_retry
+
+      Mastery.create_verdict(student_id, topic_id, mastered)
+
       assign(socket, set_complete: true, recommend_retry: recommend_retry)
     else
       socket

@@ -14,5 +14,5 @@ defmodule Et.Students do
 
   def get_student(nil), do: nil
 
-  def get_student(id), do: Repo.get(Student, id)
+  def get_student(id), do: Repo.get(Student, id, preload: [:verdicts])
 end
