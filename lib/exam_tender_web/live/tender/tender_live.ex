@@ -98,7 +98,7 @@ defmodule EtWeb.TenderLive do
     {:noreply, socket}
   end
 
-  def handle_event("clear", _params, socket) do
+  def handle_event("next-question", _params, socket) do
     {:noreply, assign_new_question(socket)}
   end
 
